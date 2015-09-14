@@ -1,4 +1,4 @@
-complete <- function(directory, id = 1:332) {
+ complete <- function(directory, id = 1:332) {
   #find the number of complete cases for selected case files
   
   #create list of files
