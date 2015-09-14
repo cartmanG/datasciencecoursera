@@ -9,4 +9,39 @@ corr <- function(directory, threshold = 0) {
   
   ## Return a numeric vector of correlations
   ## NOTE: Do not round the result!
+
+  #create list of files
+  files_list <- list.files(directory,full.names=TRUE)
+  
+  #get index of files showing number of complete cases (use complete.R)
+  index_nobs <- complete(directory)
+  
+  #get subset of index_nobs where nobs> threshold
+  ss_index_nobs<-subset(index_nobs,nobs>threshold)
+  
+  #get loop length from nrows of ss_index_nobs
+  loop_length<-nrow(ss_index_nobs)
+  
+  #initiate data frame for binding
+  dat <- data.frame() 
+  
+  
+  # --- Assert create an empty numeric vector
+  corrsNum <- numeric(0)
+  
+  #loop through files and load in dat using rbind
+  for(i in 1:loop_length){
+    dat <- rbind(dat, read.csv(files_list[ss_index_nobs[i,1]]))
+  }
+  
+  
+  #calculate correlation of sulfate and nitrate for 
+  if (loop_length>0) {
+    corrsNum <- c(corrsNum, cor(dat$sulfate, dat$nitrate, use = "pairwise.complete.obs"))
+    } else {
+    corrsNum <- numeric(0)
+  }
+  
+  return(corrsNum)
+  
 }
