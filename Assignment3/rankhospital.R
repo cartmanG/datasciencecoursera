@@ -1,86 +1,122 @@
 rankhospital <- function(state, outcome, num = "best") {
-  # state argument indicates the two letter state abbreviation you would like to gather data for
-  # outcome argument indicates either heart attack, heart failure, or pneumonia 
-  # num argument can indicate either the best state, worst state, or an integer indicating the ranking 
   
+  #read outcome data
   data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
-  source("best.R")
   
-  if(!(state %in% data$State)) {
-    stop("invalid state entered")
+  # sets R warnings off for NA data (alternative to suppress warnings in practice assignment 3)
+  options(warn=-1)
+
+  #validations
+  #State must be in data set, else return "invalid state"
+  if(!(state %in% data$State)) { 
+    stop("invalid state")
   }
   
-  ## Return hospital name in that state with the given rank 30-day death rate
+  #since state data is valid, subset the data here, so it passes a smaller set to my help function
+  data<-subset(data,data$State==state) 
+  
+  # check that outcome is valid and do appropriate calculations
+  # found outcome numbers using provided informational PDF
   
   if(outcome == "heart attack") {
-    if(num == "worst"){
-      return(findWorst(11, state, data))
+    if(num=="best") {
+      findBest(11, data)  
+    }
+    else if(num =="worst"){
+      findWorst(11,data)
     }
     else {
-      data[, 11] <- as.numeric(data[, 11])
-      dataframe<-data.frame(table(data[["State"]]))
-      datasubset<-subset(data,data[["State"]]==state)
-      lengthSubset<-length(datasubset[["State"]])
-      
-      datasubset<-datasubset[order(datasubset[[11]],datasubset[["Hospital.Name"]]),]
-      datasubset<-subset(datasubset,subset=(!is.na(datasubset[[11]])))
+      findRank(11,data,num)
     }
+    
   }
-  
   else if (outcome == "heart failure") {
-    if(num == "worst"){
-      return(findWorst(17, state, data))
+    if(num=="best") {
+      findBest(17, data)  
+    }
+    else if(num =="worst"){
+      findWorst(17,data)
     }
     else {
-      data[, 17] <- as.numeric(data[, 17])
-      dataframe<-data.frame(table(data[["State"]]))
-      datasubset<-subset(data,data[["State"]]==state)
-      lengthSubset<-length(datasubset[["State"]])
-      
-      datasubset<-datasubset[order(datasubset[[17]],datasubset[["Hospital.Name"]]),]
-      datasubset<-subset(datasubset,subset=(!is.na(datasubset[[17]])))
+      findRank(17,data,num)
     }
   }
-  
   else if(outcome == "pneumonia") {
-    if(num == "worst"){
-      return(findWorst(23, state, data))
+    if(num=="best") {
+      findBest(23, data)  
+    }
+    else if(num =="worst"){
+      findWorst(23,data)
     }
     else {
-      data[, 23] <- as.numeric(data[, 23])
-      dataframe<-data.frame(table(data[["State"]]))
-      datasubset<-subset(data,data[["State"]]==state)
-      lengthSubset<-length(datasubset[["State"]])
-      
-      datasubset<-datasubset[order(datasubset[[23]],datasubset[["Hospital.Name"]]),]
-      datasubset<-subset(datasubset,subset=(!is.na(datasubset[[23]])))
+      findRank(23,data,num)
     }
   }
   else {
-    stop("invalid outcomem entered")
+    stop("invalid outcome")
   }  
-  
-  # if num is larger than the number of hospitals in state, function returns NA
-  if(is.numeric(num)&&(num>lengthSubset)) {
-    return(NA)
-  }
-  ##if num is "best" - return best
-  if(!is.numeric(num) && (num=="best")) {
-    return(best(state,outcome)) #use best function 
-  }
-  
-  if(is.numeric(num)) {
-    return(datasubset[num,"Hospital.Name"])
-  }
+   
   
 }
 
-# helper function that finds the worst hospiral for the given outcome number
-findWorst <- function(outcomeNumber, state, data) {
+## HELPER FUNCTIONS
+
+# helper function that finds the best hospital for the given outcome number
+findBest <- function(outcomeNumber, data) {
+  #as data was read in as character, convert outcome column to numeric
   data[, outcomeNumber] <- as.numeric(data[, outcomeNumber])
-  data<-subset(data,data$State==state) # only need info for given state
-  valMax<-max(data[[outcomeNumber]],na.rm=TRUE) #worse = maximum
-  data<-subset(data,data[[outcomeNumber]]==valMax)
-  data<-data[order(data[["Hospital.Name"]]),]
-  return(data[1,"Hospital.Name"]) #return worst hospital name
+  
+  #data to just interested columns, hospital.name and outcome number
+  data<-data[,c(2,outcomeNumber)]
+  
+  #order the data ascending by outcomenumber, then by hospital name to break the ties
+  orderdata <- data[order(data[,2],data[,1]),]
+  
+  #filter out only complete cases 
+  # q: before filtering out complete cases, should we subset the data
+  # ie. should a hospital to included in data set for heart attack if they didn't have pneumonia cases?
+  orderdata <- orderdata[complete.cases(orderdata),] 
+  return(orderdata[1,"Hospital.Name"]) # return best hospital name
+}
+
+
+# helper function that finds the worst hospital for the given outcome number
+findWorst <- function(outcomeNumber, data) {
+  #as data was read in as character, convert outcome column to numeric
+  data[, outcomeNumber] <- as.numeric(data[, outcomeNumber])
+  
+  #data to just interested columns, hospital.name and outcome number
+  data<-data[,c(2,outcomeNumber)]
+  
+  #order the data ascending by outcomenumber, then by hospital name to break the ties
+  orderdata <- data[order(decreasing = TRUE,data[,2],data[,1]),]
+  
+  #filter out only complete cases 
+  # q: before filtering out complete cases, should we subset the data
+  # ie. should a hospital to included in data set for heart attack if they didn't have pneumonia cases?
+  orderdata <- orderdata[complete.cases(orderdata),] 
+  return(orderdata[1,"Hospital.Name"]) # return best hospital name
+}
+
+# helper function that finds the best hospital for the given outcome number
+findRank <- function(outcomeNumber, data, rank) {
+  #as data was read in as character, convert outcome column to numeric
+  data[, outcomeNumber] <- as.numeric(data[, outcomeNumber])
+  
+  #data to just interested columns, hospital.name and outcome number
+  data<-data[,c(2,outcomeNumber)]
+  
+  #order the data ascending by outcomenumber, then by hospital name to break the ties
+  orderdata <- data[order(data[,2],data[,1]),]
+  
+  #filter out only complete cases 
+  # q: before filtering out complete cases, should we subset the data
+  # ie. should a hospital to included in data set for heart attack if they didn't have pneumonia cases?
+  orderdata <- orderdata[complete.cases(orderdata),]
+  
+  #if no hospital exists for rank, then return NA
+  if (rank>nrow(orderdata)){
+    return("NA")
+  }
+    return(orderdata[rank,"Hospital.Name"]) # return best hospital name
 }

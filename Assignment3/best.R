@@ -9,32 +9,44 @@ best <- function(state, outcome) {
   
   # make sure state entered is valid
   if(!(state %in% data$State)) { 
-    stop("invalid state entered")
+    stop("invalid state")
   }
+  
+  #since state data is valid, subset the data here, so it passes a smaller set to my help function
+  data<-subset(data,data$State==state) 
+  
   
   # check that outcome is valid and do appropriate calculations
   # found outcome numbers using provided informational PDF
   if(outcome == "heart attack") {
-    findBest(11, state, data)
+    findBest(11, data)
   }
   else if (outcome == "heart failure") {
-    findBest(17, state, data)
+    findBest(17, data)
   }
   else if(outcome == "pneumonia") {
-    findBest(23, state, data)
+    findBest(23, data)
   }
   else {
-    stop("invalid outcome entered")
+    stop("invalid outcome")
   }  
   
 }
 
-# helper function that finds the best hospiral for the given outcome number
-findBest <- function(outcomeNumber, state, data) {
+# helper function that finds the best hospital for the given outcome number
+findBest <- function(outcomeNumber, data) {
+  #as data was read in as character, convert outcome column to numeric
   data[, outcomeNumber] <- as.numeric(data[, outcomeNumber])
-  data<-subset(data,data$State==state) # only need info for given state
-  valMin<-min(data[[outcomeNumber]],na.rm=TRUE) # best in this case = minimum
-  data<-subset(data,data[[outcomeNumber]]==valMin)
-  data<-data[order(data[["Hospital.Name"]]),]
-  return(data[1,"Hospital.Name"]) # return best hospital name
+  
+  #data to just interested columns, hospital.name and outcome number
+  data<-data[,c(2,outcomeNumber)]
+  
+  #order the data ascending by outcomenumber, then by hospital name to break the ties
+  orderdata <- data[order(data[,2],data[,1]),]
+  
+  #filter out only complete cases 
+  # q: before filtering out complete cases, should we subset the data
+  # ie. should a hospital to included in data set for heart attack if they didn't have pneumonia cases?
+  orderdata <- orderdata[complete.cases(orderdata),] 
+  return(orderdata[1,"Hospital.Name"]) # return best hospital name
 }
