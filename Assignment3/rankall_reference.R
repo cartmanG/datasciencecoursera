@@ -1,31 +1,52 @@
-rankall_reference <- function(outcome, num="best") {
+##Part 4: rankall.R:
+
+rankall_reference <- function(outcome, num = "best") {
   ## Read outcome data
-  ## Check that state and outcome are valid
-  ## For each state, find the hospital of the given rank
-  ## Return a data frame with the hospital names and the
-  ## (abbreviated) state name
+  data <- read.csv("outcome-of-care-measures.csv")
   
-  source("outcomeCol.R")
-  
-  outcome <- outcomeCol(outcome)
-  
-  data <- read.csv("data/outcome-of-care-measures.csv",  colClasses="character")
-  data[,outcome] <- suppressWarnings(as.numeric(data[,outcome]))
-  data <- data[order(data$"State", data[outcome], data$"Hospital.Name", na.last=NA),]
-  data <- data[!is.na(outcome)]
-  
-  l <- split(data[,c("Hospital.Name")], data$State)
-  
-  rankHospitals <- function(x, num) {
-    if (num=="best") {
-      head(x, 1)
-    } else if (num=="worst") {
-      tail(x, 1)
-    } else {
-      x[num]
-    }
+  ## Check that outcome is valid
+  if (!((outcome == "heart attack") | (outcome == "heart failure")
+        | (outcome == "pneumonia"))) {
+    stop ("invalid outcome")
   }
   
-  result <- lapply(l, rankHospitals, num)
-  data.frame(hospital = unlist(result), state = names(result), row.names = names(result))
+  ## For each state, find the hospital of the given rank
+  col <- if (outcome == "heart attack") {
+    11
+  } else if (outcome == "heart failure") {
+    17
+  } else {
+    23
+  }
+  
+  data[, col] <- suppressWarnings(as.numeric(levels(data[, col])[data[, col]]))
+  data[, 2] <- as.character(data[, 2])
+  
+  # Generate an empty vector that will be filled later, row by row, to 
+  # generate the final output.
+  output <- vector()
+  
+  states <- levels(data[, 7])
+  
+  for(i in 1:length(states)) {
+    statedata <- data[grep(states[i], data$State), ]
+    orderdata <- statedata[order(statedata[, col], statedata[, 2], 
+                                 na.last = NA), ]
+    hospital <- if(num == "best") {
+      orderdata[1, 2]
+    } else if(num == "worst") {
+      orderdata[nrow(orderdata), 2]
+    } else{
+      orderdata[num, 2]
+    }
+    output <- append(output, c(hospital, states[i]))
+  }
+  
+  ## Return a data frame with the hospital names and the (abbreviated) 
+  ## state name
+  output <- as.data.frame(matrix(output, length(states), 2, byrow = TRUE))
+  colnames(output) <- c("hospital", "state")
+  rownames(output) <- states
+  
+  output
 }
