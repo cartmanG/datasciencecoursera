@@ -1,0 +1,1 @@
+dt[, mean(rankingGDP, na.rm=TRUE), by=Income.Group]
